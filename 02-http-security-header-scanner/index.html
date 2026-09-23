@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>HTTP Security Header Scanner &amp; Hardener // Sameek Parajuli</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header-bar">
+      <div class="title-group">
+        <span class="badge">TOOL ENGINE 02</span>
+        <h1>HTTP Security Header Scanner &amp; Hardener</h1>
+        <p>OWASP Top 10 defense-in-depth header auditor and Nginx / Apache config generator.</p>
+      </div>
+      <div>
+        <a href="https://github.com/Samik-Parajuli" class="btn" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+      </div>
+    </header>
+
+    <div class="card">
+      <div class="presets-bar">
+        <span class="presets-label">PRESETS:</span>
+        <button class="btn" id="sampleHardened">Hardened Server</button>
+        <button class="btn" id="sampleVulnerable">Vulnerable Defaults</button>
+        <button class="btn" id="sampleMissing">Missing All Headers</button>
+        <button class="btn" id="clearBtn">Clear</button>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <label style="font-family:var(--font-mono); font-size:0.8rem; color:var(--text-dim);">RAW RESPONSE HEADERS</label>
+          <textarea id="headersInput" rows="14" placeholder="Paste HTTP headers (e.g. Strict-Transport-Security: max-age=31536000)..."></textarea>
+        </div>
+        <div>
+          <div id="gradeBanner" class="status-banner">Awaiting input...</div>
+          <div id="auditResults" style="font-family:var(--font-mono); font-size:0.85rem; line-height:1.7;"></div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <span>Crafted by Sameek Parajuli &middot; Zero-Telemetry Security Suite</span>
+      <a href="https://github.com/Samik-Parajuli">github.com/Samik-Parajuli</a>
+    </footer>
+  </div>
+
+  <script>
+    const input = document.getElementById('headersInput');
+    const banner = document.getElementById('gradeBanner');
+    const results = document.getElementById('auditResults');
+
+    function audit() {
+      const text = input.value.trim();
+      if (!text) {
+        banner.className = 'status-banner';
+        banner.textContent = 'Awaiting input...';
+        results.innerHTML = '';
+        return;
+      }
+      const lines = text.split('\n');
+      const h = {};
+      lines.forEach(l => {
+        const idx = l.indexOf(':');
+        if (idx !== -1) h[l.slice(0, idx).trim().toLowerCase()] = l.slice(idx + 1).trim();
+      });
+
+      let score = 100;
+      let items = [];
+      if (h['content-security-policy']) items.push('[PASS] Content-Security-Policy active.');
+      else { score -= 25; items.push('[FAIL] Missing Content-Security-Policy (XSS risk).'); }
+
+      if (h['strict-transport-security']) items.push('[PASS] HSTS active.');
+      else { score -= 20; items.push('[FAIL] Missing Strict-Transport-Security.'); }
+
+      if (h['x-frame-options']) items.push('[PASS] X-Frame-Options: ' + h['x-frame-options']);
+      else { score -= 15; items.push('[FAIL] Missing X-Frame-Options (Clickjacking risk).'); }
+
+      if (h['x-content-type-options']) items.push('[PASS] X-Content-Type-Options: nosniff');
+      else { score -= 10; items.push('[FAIL] Missing X-Content-Type-Options.'); }
+
+      if (h['server']) { score -= 5; items.push('[WARN] Server banner leak: ' + h['server']); }
+      if (h['x-powered-by']) { score -= 10; items.push('[FAIL] X-Powered-By leak: ' + h['x-powered-by']); }
+
+      score = Math.max(0, Math.min(100, score));
+      let grade = 'F';
+      if (score >= 90) grade = 'A+';
+      else if (score >= 80) grade = 'A';
+      else if (score >= 65) grade = 'B';
+      else if (score >= 50) grade = 'C';
+      else if (score >= 35) grade = 'D';
+
+      banner.className = 'status-banner ' + (score >= 80 ? 'valid' : (score >= 50 ? 'warning' : 'critical'));
+      banner.textContent = 'GRADE ' + grade + ' (' + score + '/100)';
+      results.innerHTML = items.map(i => '<div>' + i + '</div>').join('');
+    }
+
+    input.addEventListener('input', audit);
+    document.getElementById('clearBtn').onclick = () => { input.value = ''; audit(); };
+    document.getElementById('sampleHardened').onclick = () => {
+      input.value = "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload\nContent-Security-Policy: default-src 'self'\nX-Frame-Options: DENY\nX-Content-Type-Options: nosniff\nReferrer-Policy: strict-origin-when-cross-origin";
+      audit();
+    };
+    document.getElementById('sampleVulnerable').onclick = () => {
+      input.value = "Server: Apache/2.4.41 (Ubuntu)\nX-Powered-By: PHP/7.4.3\nContent-Type: text/html";
+      audit();
+    };
+    document.getElementById('sampleMissing').onclick = () => {
+      input.value = "Content-Type: text/html; charset=utf-8";
+      audit();
+    };
+  </script>
+</body>
+</html>
