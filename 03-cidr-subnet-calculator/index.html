@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CIDR / IP Subnet Calculator &amp; Range Engine // Sameek Parajuli</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header-bar">
+      <div class="title-group">
+        <span class="badge">TOOL ENGINE 03</span>
+        <h1>CIDR / IP Subnet Calculator &amp; Range Engine</h1>
+        <p>32-Bit bitwise IPv4 network address and host boundary calculator.</p>
+      </div>
+      <div>
+        <a href="https://github.com/Samik-Parajuli" class="btn" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+      </div>
+    </header>
+
+    <div class="card">
+      <div class="presets-bar">
+        <span class="presets-label">PRESETS:</span>
+        <button class="btn" onclick="setPreset('192.168.1.0/24')">192.168.1.0/24</button>
+        <button class="btn" onclick="setPreset('172.16.0.0/16')">172.16.0.0/16</button>
+        <button class="btn" onclick="setPreset('10.0.0.0/8')">10.0.0.0/8</button>
+        <button class="btn" onclick="setPreset('10.10.10.0/30')">10.10.10.0/30 (P2P)</button>
+      </div>
+
+      <div style="margin-bottom:1.5rem;">
+        <label style="font-family:var(--font-mono); font-size:0.8rem; color:var(--text-dim);">IP ADDRESS / CIDR PREFIX</label>
+        <input type="text" id="cidrInput" value="192.168.1.100/24" style="font-size:1.1rem; padding:0.85rem;">
+      </div>
+
+      <div class="grid-2" id="resultsGrid" style="font-family:var(--font-mono); font-size:0.9rem;">
+        <!-- Calculated rows will render here -->
+      </div>
+    </div>
+
+    <footer class="footer">
+      <span>Crafted by Sameek Parajuli &middot; Zero-Telemetry Security Suite</span>
+      <a href="https://github.com/Samik-Parajuli">github.com/Samik-Parajuli</a>
+    </footer>
+  </div>
+
+  <script>
+    const input = document.getElementById('cidrInput');
+    const grid = document.getElementById('resultsGrid');
+
+    function ipToInt(ip) {
+      return ip.split('.').reduce((acc, oct) => (acc << 8) + parseInt(oct, 10), 0) >>> 0;
+    }
+    function intToIp(int) {
+      return [(int >>> 24) & 255, (int >>> 16) & 255, (int >>> 8) & 255, int & 255].join('.');
+    }
+
+    function calculate() {
+      const val = input.value.trim();
+      const parts = val.split('/');
+      const ip = parts[0];
+      const maskLen = parts.length > 1 ? parseInt(parts[1], 10) : 24;
+
+      if (isNaN(maskLen) || maskLen < 0 || maskLen > 32) return;
+      const maskInt = maskLen === 0 ? 0 : (~0 << (32 - maskLen)) >>> 0;
+      const wildInt = (~maskInt) >>> 0;
+      const ipInt = ipToInt(ip);
+      const netInt = (ipInt & maskInt) >>> 0;
+      const bcastInt = (netInt | wildInt) >>> 0;
+
+      const totalHosts = Math.pow(2, 32 - maskLen);
+      const usableHosts = maskLen >= 31 ? (maskLen === 31 ? 2 : 1) : Math.max(0, totalHosts - 2);
+      const firstHost = maskLen >= 31 ? intToIp(netInt) : intToIp(netInt + 1);
+      const lastHost = maskLen >= 31 ? intToIp(bcastInt) : intToIp(bcastInt - 1);
+
+      grid.innerHTML = `
+        <div><strong>Network Address:</strong> ${intToIp(netInt)}</div>
+        <div><strong>Broadcast Address:</strong> ${intToIp(bcastInt)}</div>
+        <div><strong>Subnet Mask:</strong> ${intToIp(maskInt)} (/${maskLen})</div>
+        <div><strong>Wildcard Mask:</strong> ${intToIp(wildInt)}</div>
+        <div><strong>First Usable:</strong> ${firstHost}</div>
+        <div><strong>Last Usable:</strong> ${lastHost}</div>
+        <div><strong>Total Usable Hosts:</strong> ${usableHosts.toLocaleString()}</div>
+        <div><strong>Class & Scope:</strong> ${ip.startsWith('10.') || ip.startsWith('192.168.') || ip.startsWith('172.16.') ? 'RFC 1918 Private' : 'Public Routable'}</div>
+      `;
+    }
+
+    function setPreset(p) { input.value = p; calculate(); }
+    input.addEventListener('input', calculate);
+    calculate();
+  </script>
+</body>
+</html>
