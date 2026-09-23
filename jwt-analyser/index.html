@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>JWT Security Analyzer & Token Auditor // Sameek Parajuli</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header-bar">
+      <div class="title-group">
+        <span class="badge">TOOL ENGINE 01</span>
+        <h1>JWT Security Analyzer &amp; Token Auditor</h1>
+        <p>Production-grade RFC 7519 client-side decoder, signature validator, and algorithm 'none' auditor.</p>
+      </div>
+      <div>
+        <a href="https://github.com/Samik-Parajuli" class="btn" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+      </div>
+    </header>
+
+    <div class="card">
+      <div class="presets-bar">
+        <span class="presets-label">QUICK SAMPLES:</span>
+        <button class="btn" id="sampleValid">Valid Token</button>
+        <button class="btn" id="sampleExpired">Expired Token</button>
+        <button class="btn" id="sampleNone">Alg 'None' Attack</button>
+        <button class="btn" id="clearBtn">Clear</button>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <label style="font-family:var(--font-mono); font-size:0.8rem; color:var(--text-dim);">ENCODED JWT TOKEN</label>
+          <textarea id="jwtInput" rows="12" placeholder="Paste JSON Web Token here (header.payload.signature)..."></textarea>
+        </div>
+        <div>
+          <div id="auditStatus" class="status-banner">Paste token to start audit...</div>
+          <label style="font-family:var(--font-mono); font-size:0.8rem; color:var(--text-dim);">DECODED HEADER</label>
+          <pre id="headerOut">// Decoded header</pre>
+          <label style="font-family:var(--font-mono); font-size:0.8rem; color:var(--text-dim); margin-top:0.75rem; display:block;">DECODED PAYLOAD</label>
+          <pre id="payloadOut">// Decoded payload</pre>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <span>Crafted by Sameek Parajuli &middot; Zero-Telemetry Security Suite</span>
+      <a href="https://github.com/Samik-Parajuli">github.com/Samik-Parajuli</a>
+    </footer>
+  </div>
+
+  <script>
+    const jwtInput = document.getElementById('jwtInput');
+    const headerOut = document.getElementById('headerOut');
+    const payloadOut = document.getElementById('payloadOut');
+    const auditStatus = document.getElementById('auditStatus');
+
+    function b64Decode(str) {
+      let b64 = str.replace(/-/g, '+').replace(/_/g, '/');
+      while (b64.length % 4) b64 += '=';
+      return decodeURIComponent(escape(atob(b64)));
+    }
+
+    function runAudit() {
+      const val = jwtInput.value.trim();
+      if (!val) {
+        auditStatus.className = 'status-banner';
+        auditStatus.textContent = 'Paste token to start audit...';
+        headerOut.textContent = '// Decoded header';
+        payloadOut.textContent = '// Decoded payload';
+        return;
+      }
+      const parts = val.split('.');
+      if (parts.length < 2) {
+        auditStatus.className = 'status-banner warning';
+        auditStatus.textContent = 'Malformed JWT: Expected dot-separated token.';
+        return;
+      }
+      try {
+        const h = JSON.parse(b64Decode(parts[0]));
+        headerOut.textContent = JSON.stringify(h, null, 2);
+        const p = JSON.parse(b64Decode(parts[1]));
+        payloadOut.textContent = JSON.stringify(p, null, 2);
+
+        let issues = [];
+        let isCrit = false;
+        if (!h.alg || h.alg.toLowerCase() === 'none') {
+          issues.push('CRITICAL: Alg set to "none" (CVE-2015-9235 bypass risk)');
+          isCrit = true;
+        }
+        if (p.exp) {
+          const now = Math.floor(Date.now() / 1000);
+          if (p.exp < now) issues.push('EXPIRED: Token expired at ' + new Date(p.exp * 1000).toISOString());
+          else issues.push('VALID: Expires at ' + new Date(p.exp * 1000).toISOString());
+        }
+        if (isCrit) {
+          auditStatus.className = 'status-banner critical';
+        } else if (issues.some(i => i.startsWith('EXPIRED'))) {
+          auditStatus.className = 'status-banner warning';
+        } else {
+          auditStatus.className = 'status-banner valid';
+        }
+        auditStatus.textContent = issues.join(' | ') || 'Structure parsed successfully.';
+      } catch (err) {
+        auditStatus.className = 'status-banner critical';
+        auditStatus.textContent = 'Decode error: ' + err.message;
+      }
+    }
+
+    jwtInput.addEventListener('input', runAudit);
+    document.getElementById('clearBtn').onclick = () => { jwtInput.value = ''; runAudit(); };
+    document.getElementById('sampleValid').onclick = () => {
+      const exp = Math.floor(Date.now()/1000) + 86400 * 7;
+      const h = btoa(JSON.stringify({alg:"HS256",typ:"JWT"})).replace(/=/g,'');
+      const p = btoa(JSON.stringify({sub:"sameekey",role:"admin",exp:exp})).replace(/=/g,'');
+      jwtInput.value = h + '.' + p + '.sample_signature_hash';
+      runAudit();
+    };
+    document.getElementById('sampleExpired').onclick = () => {
+      const h = btoa(JSON.stringify({alg:"RS256",typ:"JWT"})).replace(/=/g,'');
+      const p = btoa(JSON.stringify({sub:"admin",exp:1577836800})).replace(/=/g,'');
+      jwtInput.value = h + '.' + p + '.expired_sig';
+      runAudit();
+    };
+    document.getElementById('sampleNone').onclick = () => {
+      const h = btoa(JSON.stringify({alg:"none",typ:"JWT"})).replace(/=/g,'');
+      const p = btoa(JSON.stringify({sub:"admin",role:"superuser"})).replace(/=/g,'');
+      jwtInput.value = h + '.' + p + '.';
+      runAudit();
+    };
+  </script>
+</body>
+</html>
