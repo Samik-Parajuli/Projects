@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Subdomain &amp; URL SSRF Parser // Sameek Parajuli</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header-bar">
+      <div class="title-group">
+        <span class="badge">TOOL ENGINE 05</span>
+        <h1>Subdomain &amp; URL SSRF/Open-Redirect Parser</h1>
+        <p>RFC 3986 URL deconstruction and parameter risk evaluator.</p>
+      </div>
+      <div>
+        <a href="https://github.com/Samik-Parajuli" class="btn" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+      </div>
+    </header>
+
+    <div class="card">
+      <div style="margin-bottom:1.5rem;">
+        <label style="font-family:var(--font-mono); font-size:0.8rem; color:var(--text-dim);">TARGET URL</label>
+        <input type="text" id="urlInput" value="https://api.internal.target.com:8443/auth/v2?redirect=//evil.com&token=sample#debug" style="font-size:1rem; padding:0.75rem;">
+      </div>
+
+      <div class="grid-2" id="urlBreakdown" style="font-family:var(--font-mono); font-size:0.9rem; margin-bottom:1.5rem;"></div>
+
+      <h3 style="font-family:var(--font-mono); font-size:1rem; color:var(--primary); margin-bottom:0.75rem;">PARSED QUERY PARAMETERS</h3>
+      <div id="paramsList" style="font-family:var(--font-mono); font-size:0.85rem;"></div>
+    </div>
+
+    <footer class="footer">
+      <span>Crafted by Sameek Parajuli &middot; Zero-Telemetry Security Suite</span>
+      <a href="https://github.com/Samik-Parajuli">github.com/Samik-Parajuli</a>
+    </footer>
+  </div>
+
+  <script>
+    const input = document.getElementById('urlInput');
+    const breakdown = document.getElementById('urlBreakdown');
+    const paramsList = document.getElementById('paramsList');
+
+    function parse() {
+      try {
+        const u = new URL(input.value.trim());
+        const parts = u.hostname.split('.');
+        const sub = parts.length > 2 ? parts.slice(0, -2).join('.') : '[None]';
+
+        breakdown.innerHTML = `
+          <div><strong>Protocol:</strong> ${u.protocol}</div>
+          <div><strong>Hostname:</strong> ${u.hostname}</div>
+          <div><strong>Port:</strong> ${u.port || (u.protocol === 'https:' ? 443 : 80)}</div>
+          <div><strong>Subdomains:</strong> ${sub}</div>
+          <div><strong>Path:</strong> ${u.pathname}</div>
+          <div><strong>Hash:</strong> ${u.hash || '[None]'}</div>
+        `;
+
+        let pItems = [];
+        u.searchParams.forEach((val, key) => {
+          const isRisky = ['url', 'redirect', 'next', 'dest', 'callback', 'target'].includes(key.toLowerCase());
+          pItems.push('<div style="margin-bottom:4px;">' + (isRisky ? '<span style="color:#ff2b3d;">[RISK]</span> ' : '<span style="color:#00ff88;">[OK]</span> ') + '<strong>' + key + '</strong> = ' + val + '</div>');
+        });
+        paramsList.innerHTML = pItems.length ? pItems.join('') : '<em>No query parameters detected.</em>';
+      } catch (err) {
+        breakdown.innerHTML = '<div style="color:#ff2b3d;">Invalid URL: ' + err.message + '</div>';
+        paramsList.innerHTML = '';
+      }
+    }
+
+    input.addEventListener('input', parse);
+    parse();
+  </script>
+</body>
+</html>
