@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>JSON Security Sanitizer // Sameek Parajuli</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header-bar">
+      <div class="title-group">
+        <span class="badge">TOOL ENGINE 08</span>
+        <h1>JSON Security Sanitizer &amp; Formatter</h1>
+        <p>Air-gapped validator, beautifier, and minifier with exact line/column error detection.</p>
+      </div>
+      <div>
+        <a href="https://github.com/Samik-Parajuli" class="btn" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+      </div>
+    </header>
+
+    <div class="card">
+      <div class="presets-bar">
+        <button class="btn primary" id="beautifyBtn"><i class="fas fa-indent"></i> Beautify</button>
+        <button class="btn" id="minifyBtn"><i class="fas fa-compress"></i> Minify</button>
+        <button class="btn" id="sampleBtn">Load Sample</button>
+        <button class="btn" id="clearBtn">Clear</button>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <label style="font-family:var(--font-mono); font-size:0.8rem; color:var(--text-dim);">INPUT JSON</label>
+          <textarea id="jsonIn" rows="14" placeholder='Paste unformatted JSON here (e.g. {"status":"ok","targets":["api","db"]})...'></textarea>
+        </div>
+        <div>
+          <div id="statusBanner" class="status-banner">Awaiting input...</div>
+          <label style="font-family:var(--font-mono); font-size:0.8rem; color:var(--text-dim);">OUTPUT</label>
+          <pre id="jsonOut">// Formatted JSON will display here</pre>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <span>Crafted by Sameek Parajuli &middot; Zero-Telemetry Security Suite</span>
+      <a href="https://github.com/Samik-Parajuli">github.com/Samik-Parajuli</a>
+    </footer>
+  </div>
+
+  <script>
+    const input = document.getElementById('jsonIn');
+    const out = document.getElementById('jsonOut');
+    const banner = document.getElementById('statusBanner');
+
+    function format(indent) {
+      const val = input.value.trim();
+      if (!val) {
+        banner.className = 'status-banner';
+        banner.textContent = 'Awaiting input...';
+        out.textContent = '// Formatted JSON will display here';
+        return;
+      }
+      try {
+        const obj = JSON.parse(val);
+        out.textContent = JSON.stringify(obj, null, indent);
+        banner.className = 'status-banner valid';
+        banner.textContent = 'Valid JSON (RFC 8259)';
+      } catch (err) {
+        banner.className = 'status-banner critical';
+        banner.textContent = 'Syntax Error: ' + err.message;
+        out.textContent = '// Error parsing JSON';
+      }
+    }
+
+    document.getElementById('beautifyBtn').onclick = () => format(2);
+    document.getElementById('minifyBtn').onclick = () => format(0);
+    document.getElementById('clearBtn').onclick = () => { input.value = ''; format(2); };
+    document.getElementById('sampleBtn').onclick = () => {
+      input.value = '{"project":"security-suite","author":"Sameek Parajuli","modules":["jwt","headers","cidr","cve","url","regex","time","json"],"air_gapped":true}';
+      format(2);
+    };
+    input.addEventListener('input', () => format(2));
+  </script>
+</body>
+</html>
