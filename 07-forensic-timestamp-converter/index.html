@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Forensic Timestamp Converter // Sameek Parajuli</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header-bar">
+      <div class="title-group">
+        <span class="badge">TOOL ENGINE 07</span>
+        <h1>Forensic Timestamp &amp; AD Converter</h1>
+        <p>Windows FILETIME (AD 1601) and Unix epoch bi-directional forensic translator.</p>
+      </div>
+      <div>
+        <a href="https://github.com/Samik-Parajuli" class="btn" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+      </div>
+    </header>
+
+    <div class="card">
+      <div class="presets-bar">
+        <span class="presets-label">QUICK VALUES:</span>
+        <button class="btn" onclick="setVal(Math.floor(Date.now()/1000))">Current Unix</button>
+        <button class="btn" onclick="setVal('133698765430000000')">USN Journal Sample</button>
+        <button class="btn" onclick="setVal('132537600000000000')">AD BadPwdTime</button>
+      </div>
+
+      <div style="margin-bottom:1.5rem;">
+        <label style="font-family:var(--font-mono); font-size:0.8rem; color:var(--text-dim);">TIMESTAMP OR DATE STRING</label>
+        <input type="text" id="timeInput" value="133698765430000000" style="font-size:1rem; padding:0.75rem;">
+      </div>
+
+      <div class="grid-2" id="timeGrid" style="font-family:var(--font-mono); font-size:0.9rem;"></div>
+    </div>
+
+    <footer class="footer">
+      <span>Crafted by Sameek Parajuli &middot; Zero-Telemetry Security Suite</span>
+      <a href="https://github.com/Samik-Parajuli">github.com/Samik-Parajuli</a>
+    </footer>
+  </div>
+
+  <script>
+    const input = document.getElementById('timeInput');
+    const grid = document.getElementById('timeGrid');
+    const WINDOWS_DIFF = 11644473600;
+
+    function convert() {
+      const val = input.value.trim();
+      let dt = null;
+      if (/^\d+$/.test(val)) {
+        const num = parseInt(val, 10);
+        if (num > 1000000000000000) {
+          const unixS = (num / 10000000) - WINDOWS_DIFF;
+          dt = new Date(unixS * 1000);
+        } else if (num > 10000000000) {
+          dt = new Date(num);
+        } else {
+          dt = new Date(num * 1000);
+        }
+      } else {
+        dt = new Date(val);
+      }
+
+      if (!dt || isNaN(dt.getTime())) {
+        grid.innerHTML = '<div style="color:#ff2b3d;">Invalid date/timestamp.</div>';
+        return;
+      }
+
+      const unixS = Math.floor(dt.getTime() / 1000);
+      const filetime = BigInt(Math.floor((unixS + WINDOWS_DIFF))) * BigInt(10000000);
+
+      grid.innerHTML = `
+        <div><strong>UTC Date:</strong> ${dt.toUTCString()}</div>
+        <div><strong>ISO 8601:</strong> ${dt.toISOString()}</div>
+        <div><strong>Unix Epoch (Seconds):</strong> ${unixS}</div>
+        <div><strong>Unix Epoch (Millis):</strong> ${dt.getTime()}</div>
+        <div style="grid-column: span 2;"><strong>Windows 64-bit FILETIME:</strong> ${filetime.toString()}</div>
+      `;
+    }
+
+    function setVal(v) { input.value = v; convert(); }
+    input.addEventListener('input', convert);
+    convert();
+  </script>
+</body>
+</html>
