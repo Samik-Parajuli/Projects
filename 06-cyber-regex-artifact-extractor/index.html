@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cyber Regex Artifact Extractor // Sameek Parajuli</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header-bar">
+      <div class="title-group">
+        <span class="badge">TOOL ENGINE 06</span>
+        <h1>Cyber Regex Artifact Extractor</h1>
+        <p>Automated IOC carving, deduplication, and forensic artifact extraction.</p>
+      </div>
+      <div>
+        <a href="https://github.com/Samik-Parajuli" class="btn" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+      </div>
+    </header>
+
+    <div class="card">
+      <div class="presets-bar">
+        <span class="presets-label">PATTERN:</span>
+        <button class="btn" onclick="setPattern('ipv4')">IPv4</button>
+        <button class="btn" onclick="setPattern('hashes')">MD5/SHA</button>
+        <button class="btn" onclick="setPattern('email')">Emails</button>
+        <button class="btn" onclick="setPattern('jwt')">JWT</button>
+        <button class="btn" onclick="setPattern('aws')">AWS Keys</button>
+      </div>
+
+      <div style="margin-bottom:1rem;">
+        <label style="font-family:var(--font-mono); font-size:0.8rem; color:var(--text-dim);">REGEX PATTERN</label>
+        <input type="text" id="patternInput" value="\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b">
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <label style="font-family:var(--font-mono); font-size:0.8rem; color:var(--text-dim);">RAW TEXT / LOGS</label>
+          <textarea id="rawText" rows="12" placeholder="Paste unformatted network logs or strings here..."></textarea>
+        </div>
+        <div>
+          <label style="font-family:var(--font-mono); font-size:0.8rem; color:var(--text-dim);">EXTRACTED ARTIFACTS (<span id="matchCount">0</span>)</label>
+          <pre id="matchesOut">// Extracted matches will appear here</pre>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <span>Crafted by Sameek Parajuli &middot; Zero-Telemetry Security Suite</span>
+      <a href="https://github.com/Samik-Parajuli">github.com/Samik-Parajuli</a>
+    </footer>
+  </div>
+
+  <script>
+    const PATTERNS = {
+      ipv4: "\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b",
+      hashes: "\\b[a-fA-F0-9]{32,64}\\b",
+      email: "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b",
+      jwt: "\\beyJ[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_.+/=]*\\b",
+      aws: "\\bAKIA[0-9A-Z]{16}\\b"
+    };
+
+    const pInput = document.getElementById('patternInput');
+    const rawText = document.getElementById('rawText');
+    const out = document.getElementById('matchesOut');
+    const count = document.getElementById('matchCount');
+
+    function extract() {
+      const text = rawText.value;
+      if (!text) { out.textContent = '// Extracted matches will appear here'; count.textContent = '0'; return; }
+      try {
+        const re = new RegExp(pInput.value, 'gmi');
+        const matches = text.match(re) || [];
+        const unique = [...new Set(matches)];
+        count.textContent = unique.length + ' unique (' + matches.length + ' total)';
+        out.textContent = unique.length ? unique.join('\n') : '// 0 matches found.';
+      } catch (e) {
+        out.textContent = 'Regex Error: ' + e.message;
+      }
+    }
+
+    function setPattern(p) {
+      pInput.value = PATTERNS[p];
+      extract();
+    }
+
+    pInput.addEventListener('input', extract);
+    rawText.addEventListener('input', extract);
+  </script>
+</body>
+</html>
