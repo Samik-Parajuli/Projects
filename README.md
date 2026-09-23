@@ -18,7 +18,7 @@ Every project in this directory is a **self-contained standalone module** with:
 
 | # | Project Directory | Domain | Primary Technical Capability | CLI Utility |
 |---|---|---|---|---|
-| **01** | [`01-jwt-security-analyzer`](./01-jwt-security-analyzer) | Auth & Crypto | RFC 7519 decoding, token expiration checks, `alg: none` (CVE-2015-9235) exploit testing | `jwt_tool.py` |
+| **01** | [`01-jwt-security-analyzer`](./jwt-analyser) | Auth & Crypto | RFC 7519 decoding, token expiration checks, `alg: none` (CVE-2015-9235) exploit testing | `jwt_tool.py` |
 | **02** | [`02-http-security-header-scanner`](./02-http-security-header-scanner) | AppSec & Hardening | Live A+ to F security grading, OWASP headers audit, Nginx/Apache config generator | `header_scanner.py` |
 | **03** | [`03-cidr-subnet-calculator`](./03-cidr-subnet-calculator) | Network & Infra | 32-bit bitwise IPv4 subnet math, host range mapping, RFC 1918 scope, binary octets | `cidr_calc.py` |
 | **04** | [`04-cve-intelligence-radar`](./04-cve-intelligence-radar) | Threat Intel | Weaponized CVE lookup (Log4Shell, EternalBlue, ProxyLogon, XZ), CVSS v3.1, PoCs | `cve_radar.py` |
